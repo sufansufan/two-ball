@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<script src="https://unpkg.com/vue@2.6.14"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.1/echarts.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<link rel="stylesheet" href="./index.css">
+
+
+<body>
+  <div id="vueApp">
+    <div v-for="(item, index) in tableData" :key="index">
+      <div class="title">{{ index !== 6 ? `${ index + 1 }号` : '蓝号' }}</div>
+        <div class="number"  >
+          <div v-for="(row, index) in item" :key="index">{{ row.name }}</div>
+        </div>
+        <div class="number calc">
+          <div v-for="(row, index) in item" :key="index" :class="{ 'red-color': row.rateNumer >= 10 }">{{ row.num }} </div>
+        </div>
+        <div class="number calc"  >
+          <div  v-for="(row, index) in item" :key="index"  :class="{ 'red-color': row.rateNumer >= 10 }">{{ row.rate }} </div>
+        </div>
+    </div>
+    <div class="chart-title">
+      <div>
+        图表分析
+      </div>
+      <div>
+        <el-select v-model="ballName" @change="ballChange" placeholder="请选择几号球">
+          <el-option
+            v-for="item in ballList"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value">
+          </el-option>
+        </el-select>
+      </div>
+    </div>
+    <div>
+        <div id="charts-box"></div>
+    </div>
+    <div class="chart-title">
+      <div>
+        综合分析
+      </div>
+    </div>
+    <div>
+      <iframe src="https://zst.yingti666.com/ssq/" frameborder="0" style="width: 95vw; height: 1000px"></iframe>
+    </div>
+  </div>
+</body>
+</html>
+<script type="module">
+  import sphereData from './sphereData.js'
+  new Vue({
+    el: '#vueApp',
+    data() {
+      return {
+        tableData: [],
+        ballName: 0,
+        ballList: [
+          {
+            label: '1号球',
+            value: 0
+          },
+          {
+            label: '2号球',
+            value: 1
+          },
+          {
+            label: '3号球',
+            value: 2
+          },
+          {
+            label: '4号球',
+            value: 3
+          },
+          {
+            label: '5号球',
+            value: 4
+          },
+          {
+            label: '6号球',
+            value: 5
+          },
+          {
+            label: '蓝球',
+            value: 6
+          }
+        ]
+      }
+    },
+    created() {
+      this.getData()
+    },
+    mounted() {
+      this.initCharts()
+
+    },
+    methods: {
+      getData() {
+        const compareData = []
+        sphereData.forEach(item => {
+            for (let i = 0; i < item.length; i++) {
+              if(!compareData[i]) {
+                compareData[i] = []
+              }
+              compareData[i].push(Number(item[i]))
+            }
+        });
+        const tableData = []
+        compareData.map((item, index) => {
+          if(!tableData[index]) {
+            tableData[index] = []
+          }
+          const num = this.getCountDuplicates(item)
+          const numKey = Object.keys(num)
+          numKey.forEach(itemKey => {
+            tableData[index].push({
+              name: itemKey,
+              num: num[itemKey],
+              rate: `${((num[itemKey] / sphereData.length ) * 100).toFixed(2)}%`,
+              rateNumer: Number(((num[itemKey] / sphereData.length ) * 100).toFixed(2))
+            })
+          })
+        })
+        this.tableData = tableData
+      },
+      getCountDuplicates(arr) {
+        const counts = {};
+        for (let i = 0; i < arr.length; i++) {
+          const item = arr[i];
+          if (counts[item]) {
+            counts[item]++;
+          } else {
+            counts[item] = 1;
+          }
+        }
+        return counts;
+      },
+      initCharts(value) {
+        var chartDom = document.getElementById('charts-box');
+        var myChart = echarts.init(chartDom);
+        const ballName = this.ballList.find(item => item.value === this.ballName).label
+        var option;
+        option = {
+          title: {
+            text: `${ballName}分析`
+          },
+          tooltip: {
+            trigger: 'axis'
+          },
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          toolbox: {
+            feature: {
+              saveAsImage: {}
+            }
+          },
+          xAxis: {
+            type: 'category',
+            boundaryGap: false
+          },
+          yAxis: {
+            type: 'value'
+          }
+        }
+        let qiuData = [];
+        sphereData.forEach((item, index) => {
+          qiuData.push(item[this.ballName]);
+        })
+
+        option.series = [
+          {
+            name: `${ballName}分析`,
+            type: 'line',
+            data: qiuData.reverse()
+          }
+        ]
+
+        option && myChart.setOption(option);
+      },
+      ballChange() {
+        this.initCharts()
+      },
+      hideDom() {
+        document.getElementsByClassName('topTipTxt')[0].style.display = 'none'
+      }
+    },
+  })
+</script>
